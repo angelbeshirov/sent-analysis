@@ -1,0 +1,7 @@
+BERT/uncased_L-12_H-768_A-12.zip
+BERT/bert_output
+BERT/bert_repo/uncased_L-12_H-768_A-12
+BERT/bert_repo/.git
+
+.git
+.env
