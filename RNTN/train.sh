@@ -31,6 +31,7 @@ for dim in "${DIM_LIST[@]}"; do
         --batch-size=${batch_size} \
         --reg=${reg} \
         --model=${outfile}
+        #--rootlevel
     set +x
 done
 

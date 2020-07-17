@@ -21,9 +21,9 @@ class Optimizer:
         self.losses = []
         self.exp_losses = []
 
-    def optimize(self, trees, log_interval=1):
+    def optimize(self, trees, log_interval=1, rootlevel=False):
         m = len(trees)
-
+        #print(rootlevel)
         # Randomly shuffle data
         random.shuffle(trees)
 
@@ -34,7 +34,7 @@ class Optimizer:
             self.total_iter += 1
 
             batch = trees[i: i+self.batch_size]
-            loss, grad = self.model.compute_loss(batch)
+            loss, grad = self.model.compute_loss(batch, rootlevel=rootlevel)
 
             self.losses.append(loss)
 
