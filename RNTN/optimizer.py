@@ -1,5 +1,3 @@
-#!/bin/env python3
-
 import random
 import time
 
@@ -15,15 +13,14 @@ class Optimizer:
         self.total_iter = 0
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.grads = [epsilon + np.zeros(m.shape) for m in self.model.stack]
+        self.grads = [epsilon + np.zeros(m.shape) for m in self.model.tensors]
 
         # initialize a variable to store all the losses
         self.losses = []
         self.exp_losses = []
 
-    def optimize(self, trees, log_interval=1, rootlevel=False):
+    def optimize(self, trees, rootlevel=False):
         m = len(trees)
-        #print(rootlevel)
         # Randomly shuffle data
         random.shuffle(trees)
 
@@ -36,16 +33,15 @@ class Optimizer:
             batch = trees[i: i+self.batch_size]
             loss, grad = self.model.compute_loss(batch, rootlevel=rootlevel)
 
-            self.losses.append(loss)
-
             # compute exponentially weighted loss
             if np.isfinite(loss):
+                self.losses.append(loss)
                 if self.total_iter > 1:
                     self.exp_losses.append(0.01*loss + 0.99*self.exp_losses[-1])
                 else:
                     self.exp_losses.append(loss)
 
-            # Perform one step of parameter update
+            # Do one step of parameter update
             self.grads[1:] = [gt+g**2 for gt,g in zip(self.grads[1:], grad[1:])]
             update = [g*(1/np.sqrt(gt)) for gt,g in zip(self.grads[1:], grad[1:])]
 
@@ -61,10 +57,7 @@ class Optimizer:
             self.model.update_params(scale=scale, update=update)
 
             # Logging
-            if self.total_iter % log_interval == 0:
-                print("\r    Iter = %d/%d, Total iterations: %d, Loss = %.4f, Expected = %.4f" %
-                    (it, its_per_optimization, self.total_iter, loss, self.exp_losses[-1]), end=' ')
-
-
+            print("\r    Iter = %d/%d, Total iterations: %d, Loss = %.4f, Expected = %.4f" %
+                (it, its_per_optimization, self.total_iter, loss, self.exp_losses[-1]), end=' ')
 
 

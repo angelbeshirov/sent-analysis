@@ -1,21 +1,23 @@
 #!/bin/sh
 
-# Dataset
-if [ -d "trees" ]; then
-    echo ":: Dataset already downloaded"
+# Create the neccessary folders
+if [ -d "models" ]; then
+    echo "models already exists"
 else
-    echo ":: Downloading dataset..."
-    DATASET_ZIP=trainDevTestTrees_PTB.zip
-    wget -c https://nlp.stanford.edu/sentiment/${DATASET_ZIP}
-    echo ":: Extracting dataset into 'trees' folder..."
-    unzip ${DATASET_ZIP}
-    rm ${DATASET_ZIP}
+    echo "Create models directory..."
+    mkdir models
 fi
 
-# Create a folder for storing models
-if [ -d "models" ]; then
-    echo ":: 'models' directory already created"
+if [ -d "trees" ]; then
+    echo "trees directory already exists"
 else
-    echo ":: Creating 'models' directory to store models..."
-    mkdir -p models
+    echo "Creating trees directory..."
+    mkdir trees
+fi
+
+if [ -d "output" ]; then
+    echo "output directory already exists"
+else
+    echo "Creating output directory..."
+    mkdir output
 fi

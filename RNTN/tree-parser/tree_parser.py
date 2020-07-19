@@ -1,6 +1,4 @@
-#!/bin/env python3
-
-class ParseTree: #
+class ParseTree:
     def __init__(self,
                  depth=0,
                  text=None,
@@ -17,49 +15,26 @@ class ParseTree: #
         return len(self.children) == 0
 
     def leaves(self):
-        """
-        Returns all leaves of this tree.
-        """
         if self.isleaf():
             return [self.text]
         else:
             return self.children[0].leaves() + self.children[1].leaves()
 
     def labeled_leaves(self):
-        """
-        Returns all leaves of this tree with its corresponding label.
-        """
         if self.isleaf():
             return [(self.label, self.text)]
         else:
             return self.children[0].labeled_leaves() + self.children[1].labeled_leaves()
 
-    def get_labeled_sentence(self):
-        """
-        Return all full sentences from this tree (one tree = one sentence i.e. parse the whole tree + the label)
-        """
+    def get_labeled_sentences(self):
         if self.isleaf():
             return self.text
         elif self.parent != None:
-            return self.children[0].get_labeled_sentence() + " " + self.children[1].get_labeled_sentence()
+            return self.children[0].get_labeled_sentences() + " " + self.children[1].get_labeled_sentences()
 
-        return self.label, self.children[0].get_labeled_sentence() + " " + self.children[1].get_labeled_sentence()
-
-    def copy(self):
-        """
-        Deep copy this tree
-        """
-        return ParseTree(
-            depth = self.depth,
-            text = self.text,
-            label = self.label,
-            children = self.children.copy() if self.children != None else [],
-            parent = self.parent)
+        return self.label, self.children[0].get_labeled_sentences() + " " + self.children[1].get_labeled_sentences()
 
     def add_child(self, child):
-        """
-        Adds a child to the current tree.
-        """
         self.children.append(child)
         child.parent = self
 
@@ -69,13 +44,6 @@ class ParseTree: #
             return [self] + left_children + right_children
         else:
             return [self]
-
-    def lowercase(self):
-        if len(self.children) > 0:
-            for child in self.children:
-                child.lowercase()
-        else:
-            self.text = self.text.lower()
 
     def to_lines(self):
         if len(self.children) > 0:
@@ -94,19 +62,6 @@ class ParseTree: #
             return [(self.label, self.text)]
 
     def __str__(self):
-
-        """
-        String representation of a tree as visible in original corpus.
-
-        print(tree)
-        #=> '(2 (2 not) (3 good))'
-
-        Outputs
-        -------
-
-            str: the String representation of the tree.
-
-        """
         if len(self.children) > 0:
             rep = "(%d " % self.label
             for child in self.children:
@@ -117,21 +72,18 @@ class ParseTree: #
 
 class TreeParser:
 
-    def attribute_text_label(self, node, current_word):
-        """
-        Tries to recover the label inside a string
-        of the form '(3 hello)' where 3 is the label,
-        and hello is the string. Label is not assigned
-        if the string does not follow the expected
-        format.
+    def preprocess_string(self, text):
+        return text.lower()\
+               .replace("-lrb-", "(")\
+               .replace("-rrb-", ")")\
+               .replace("-lcb-", "{")\
+               .replace("-rcb-", "}")\
+               .replace("-lsb-", "[")\
+               .replace("-rsb-", "]")\
+               .strip(" ")
 
-        Arguments:
-        ----------
-            node : ParseTree, current node that should possibly receive a label.
-            current_word : str, input string.
-        """
-        node.text = current_word.lower()
-        node.text = node.text.strip(" ")
+    def attribute_text_label(self, node, current_word, binary=False):
+        node.text = self.preprocess_string(current_word)
         if len(node.text) > 0 and node.text[0].isdigit():
             split_sent = node.text.split(" ", 1)
             label = split_sent[0]
@@ -140,7 +92,10 @@ class TreeParser:
                 node.text = text
 
             if all(c.isdigit() for c in label):
-                node.label = int(label)
+                if binary:
+                    node.label = TreeParser.map_label_to_binary(int(label))
+                else:
+                    node.label = int(label)
             else:
                 text = label + " " + text
                 node.text = text
@@ -148,20 +103,13 @@ class TreeParser:
         if len(node.text) == 0:
             node.text = None
 
+    @staticmethod
+    def map_label_to_binary(label):
+        if label <= 2:
+            return 0
+        return 1
 
-    def create_tree_from_string(self, line):
-        """
-        Parse and convert a string representation
-        of an example into a ParseTree datastructure.
-
-        Arguments:
-        ----------
-            line : str, string version of the tree.
-
-        Returns:
-        --------
-            ParseTree : parsed tree.
-        """
+    def create_tree_from_string(self, line, binary=False):
         depth = 0
         current_word = ""
         root = None
@@ -170,7 +118,7 @@ class TreeParser:
         for char in line:
             if char == '(':
                 if current_node is not None and len(current_word) > 0:
-                    self.attribute_text_label(current_node, current_word)
+                    self.attribute_text_label(current_node, current_word, binary=binary)
                     current_word = ""
                 depth += 1
                 if depth > 1:
@@ -180,10 +128,9 @@ class TreeParser:
                 else:
                     root = ParseTree(depth=depth)
                     current_node = root
-
             elif char == ')':
                 if len(current_word) > 0:
-                    self.attribute_text_label(current_node, current_word)
+                    self.attribute_text_label(current_node, current_word, binary=binary)
                     current_word = ""
 
                 depth -= 1
@@ -191,12 +138,9 @@ class TreeParser:
             else:
                 current_word += char
         if depth != 0:
-            raise ParseError("Not an equal amount of closing and opening parentheses")
+            raise ParseError("Not an equal number of closing and opening brackets")
 
         return root
 
-#tree = TreeParser()
-#print(tree.create_tree_from_string("(2 (2 from) (2 innocence))").to_labeled_lines())
-#print(tree.create_tree_from_string("(3 (2 It) (4 (4 (2 's) (4 (3 (2 a) (4 (3 lovely) (2 film))) (3 (2 with) (4 (3 (3 lovely) (2 performances)) (2 (2 by) (2 (2 (2 Buy) (2 and)) (2 Accorsi))))))) #(2 .)))").to_labeled_lines())
 
 

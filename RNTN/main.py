@@ -1,11 +1,10 @@
-#!/bin/env python3
-
 import sys
 sys.path.append('./tree-parser')
 
 import argparse
 import rntn
 import tree as tr
+import numpy as np
 
 def main():
 
@@ -20,29 +19,42 @@ def main():
     parser.add_argument("-b", "--batch-size", type=int, default=30, help="Batch size")
     parser.add_argument("-r", "--reg", type=float, default=1e-6, help="Regularization")
     parser.add_argument("-t", "--test", action="store_true", help="Test a model")
-    parser.add_argument("-m", "--model", type=str, default='models/RNTN.pickle', help="Model file")
-    parser.add_argument("-rl", "--rootlevel", action="store_true", help="Only sentences or sentences and words")
+    parser.add_argument("-m", "--model", type=str, default='models/some_model.pickle', help="Model file")
+    parser.add_argument("-rl", "--rootlevel", action="store_true", help="If true only sentences, otherwise sentences and words")
+    parser.add_argument("-ft", "--finetune", action="store_true", help="Fine tune model from checkpoint")
     args = parser.parse_args()
 
     # Test
     if args.test:
         print("Testing...")
         model = rntn.RNTN.load(args.model)
-        test_trees = tr.load_trees(args.dataset)
+        binary = True if model.output_dim == 2 else False
+        test_trees = tr.load_trees(args.dataset, binary=binary)
         loss, confusion_matrix = model.test(test_trees, rootlevel=args.rootlevel)
         accuracy = 100.0 * confusion_matrix.trace() / confusion_matrix.sum()
-        print("Loss = %.3f, Correct = %d / %d, Accuracy = %.2f " % (loss, confusion_matrix.trace(), confusion_matrix.sum(), accuracy))
+        print("Loss = %.3f, Correct = %d / %d, Accuracy = %.4f " % (loss, confusion_matrix.trace(), confusion_matrix.sum(), accuracy))
+        np.savetxt("output/test_results.txt", np.array(confusion_matrix), fmt="%s")
     else:
-        print("Training...")
-        # Initialize the model
-        #print(args.rootlevel)
-        model = rntn.RNTN(dim=args.dim, output_dim=args.output_dim, batch_size=args.batch_size,
-            reg=args.reg, learning_rate=args.learning_rate, max_epochs=args.epochs)
+        model_filename=args.model
+        output_dim=args.output_dim
+        if args.finetune:
+            print("Fine-tuning..." + args.model)
+            model = rntn.RNTN.load(args.model)
+            model_filename= args.model[:-7] + "_finetuned.pickle"
+            output_dim=model.output_dim
+
+            # Change max epoch and learning rate if needed
+            model.learning_rate=args.learning_rate
+            model.max_epochs=args.epochs
+        else:
+            print("Training..." + args.model)
+            model = rntn.RNTN(dim=args.dim, output_dim=args.output_dim, batch_size=args.batch_size,
+                reg=args.reg, learning_rate=args.learning_rate, max_epochs=args.epochs)
 
         # Train
-        train_trees = tr.load_trees(args.dataset)
-
-        model.train(train_trees, model_filename=args.model, rootlevel=args.rootlevel)
+        binary = True if output_dim == 2 else False
+        train_trees = tr.load_trees(args.dataset, binary=binary)
+        model.train(train_trees, model_filename=model_filename, rootlevel=args.rootlevel, finetune=args.finetune)
 
 if __name__ == '__main__':
     main()
