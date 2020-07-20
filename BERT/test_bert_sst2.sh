@@ -3,7 +3,7 @@
 # !!! This is for the larger pre-trained model which took around 7 hours to fine tune for 3 epochs (in the train script the smaller one is used)
 export BERT_BASE_DIR=bert_repo/uncased_L-4_H-512_A-8
 export DATA_DIR=glue_data/SST-2
-export TRAINED_CLASSIFIER=bert_output_binary/model.ckpt-6313
+export TRAINED_CLASSIFIER=bert_binary/model.ckpt-6313
 export TASK_NAME=sst2
 
 python bert_repo/run_classifier.py \

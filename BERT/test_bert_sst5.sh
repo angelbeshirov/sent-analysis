@@ -1,8 +1,8 @@
 #!/bin/bash
 
-export BERT_BASE_DIR=bert_repo/uncased_L-2_H-128_A-2
+export BERT_BASE_DIR=bert_repo/uncased_L-4_H-512_A-8
 export DATA_DIR=glue_data/SST-5
-export TRAINED_CLASSIFIER=bert_output_fine_grained/model.ckpt-9042
+export TRAINED_CLASSIFIER=bert_fine_grained/small_bert/model.ckpt-9042
 export TASK_NAME=sst5
 
 python bert_repo/run_classifier.py \
