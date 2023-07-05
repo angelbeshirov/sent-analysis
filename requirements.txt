@@ -8,7 +8,7 @@ decorator==4.4.0
 defusedxml==0.5.0
 entrypoints==0.3
 gast==0.2.2
-grpcio==1.19.0
+grpcio==1.53.0
 h5py==2.9.0
 imageio==2.5.0
 ipykernel==5.1.0
